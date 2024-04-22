@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 
-const todos: { id: number, text: string, completedAt: Date | null }[] = [
+let todos: { id: number, text: string, completedAt: Date | null }[] = [
     { id: 1, text: 'Buy milk', completedAt: new Date() },
     { id: 2, text: 'Buy bread', completedAt: new Date() },
     { id: 3, text: 'Buy butter', completedAt: new Date() },
@@ -55,6 +55,22 @@ export class TodosController {
          : todo.completedAt = new Date(completedAt || todo.completedAt);
 
         res.json(todo);
+    }
+
+    public deleteTodo = (req: Request, res:Response) => {
+        const id = +req.params.id;
+        if(isNaN(id)) return res.status(400).json({error:`ID argument '${req.params.id}' is not a number`});
+
+        const todo = todos.find(todo=>todo.id===id);
+        if(!todo) return res.status(404).json({error: `Todo with id ${id} not found`});
+
+        todos.splice(todos.indexOf(todo), 1);
+        res.json(todo);
+
+        // const filteredTodos = todos.filter(todo => todo.id !== id);
+        // todos = filteredTodos;
+        
+        // res.status(200).send({message: `Todo deleted ${id}`});
     }
     
 }
