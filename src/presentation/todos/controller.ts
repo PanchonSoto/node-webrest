@@ -1,71 +1,77 @@
 import { Request, Response } from "express";
+import { prisma } from "../../data/postgres";
+import { CreateTodoDto, UpdateTodoDto } from "../../domain/dtos";
 
-let todos: { id: number, text: string, completedAt: Date | null }[] = [
-    { id: 1, text: 'Buy milk', completedAt: new Date() },
-    { id: 2, text: 'Buy bread', completedAt: new Date() },
-    { id: 3, text: 'Buy butter', completedAt: new Date() },
-];
+
 
 export class TodosController {
 
     constructor() {}
 
-    public getTodos = (req:Request, res:Response) => {
+    public getTodos = async(req:Request, res:Response) => {
+        const todos = await prisma.todo.findMany();
         return res.json(todos);
     }
 
-    public getTodoById = (req:Request, res:Response) => {
+    public getTodoById = async(req:Request, res:Response) => {
         const id = +req.params?.id;
         if(isNaN(id)) return res.status(400).json({error:`ID argument '${req.params.id}' is not a number`});
 
-        const todo = todos.find(todo=>todo.id===id);
+        const todo = await prisma.todo.findFirst({
+            where: {
+                id: id
+            }
+        });
 
         (todo)
          ? res.json(todo)
-         : res.status(404).json({error: `Todo with id:${id} not found`});
+         : res.status(404).json({error: `Todo with id:${id} not found`, todo});
     }
 
-    public createTodo = (req:Request, res:Response) => {
-        const { text } = req.body;
-        if(!text) return res.status(400).json({error:'Text property is required'});
+    public createTodo = async(req:Request, res:Response) => {
+        
+        const [error, createTodoDto] = CreateTodoDto.create(req.body);
 
-        const newTodo = {
-            id: todos.length + 1,
-            text: text,
-            completedAt: new Date()
-        }
+        if(error) return res.status(400).json({error});
 
-        todos.push(newTodo)
+        const todo = await prisma.todo.create({
+            data: createTodoDto!
+        });
 
-        res.json(newTodo);
+        
+
+        res.json(todo);
     }
 
-    public updateTodo = (req: Request, res:Response) => {
+    public updateTodo = async(req: Request, res:Response) => {
         const id = +req.params.id;
-        if(isNaN(id)) return res.status(400).json({error:`ID argument '${req.params.id}' is not a number`});
+        const [error, updateTodoDto] = UpdateTodoDto.create({...req.body, id});
 
-        const todo = todos.find(todo=>todo.id===id);
+        if(error) return res.status(400).json({error});
+
+        const todo = await prisma.todo.findUnique({where: { id }});
         if(!todo) return res.status(404).json({error:`Todo with id ${id} not found`});
 
-        const { text, completedAt } = req.body;
-        // if(!text) return res.status(400).json({error:'Text property is required'});
-        todo.text = text || todo.text;
-        (completedAt === null) 
-         ? todo.completedAt = null
-         : todo.completedAt = new Date(completedAt || todo.completedAt);
+        const todoUpdated = await prisma.todo.update({
+            where: { id },
+            data: updateTodoDto!.values
+        });
 
-        res.json(todo);
+        res.json(todoUpdated);
     }
 
-    public deleteTodo = (req: Request, res:Response) => {
+    public deleteTodo = async(req: Request, res:Response) => {
         const id = +req.params.id;
         if(isNaN(id)) return res.status(400).json({error:`ID argument '${req.params.id}' is not a number`});
 
-        const todo = todos.find(todo=>todo.id===id);
+        const todo = await prisma.todo.findUnique({where:{id}});
         if(!todo) return res.status(404).json({error: `Todo with id ${id} not found`});
 
-        todos.splice(todos.indexOf(todo), 1);
-        res.json(todo);
+        const todoDeleted = await prisma.todo.delete({where:{id:todo.id}});
+
+        (todoDeleted)
+         ? res.json(todoDeleted)
+         : res.status(404).json({error: `Todo with id ${id} not found`});
 
         // const filteredTodos = todos.filter(todo => todo.id !== id);
         // todos = filteredTodos;
