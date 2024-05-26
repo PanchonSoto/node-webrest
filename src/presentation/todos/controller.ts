@@ -33,7 +33,7 @@ export class TodosController {
 
         new CreateTodo(this.todoRepo)
             .execute(createTodoDto!)
-            .then(createdTodo=>res.json(createdTodo))
+            .then(createdTodo=>res.status(201).json(createdTodo))
             .catch(error=>res.status(400).json({error}));
     }
 
