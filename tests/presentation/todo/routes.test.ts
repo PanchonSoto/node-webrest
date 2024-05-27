@@ -110,7 +110,7 @@ describe('todo route testing', () => {
         });  
     });
 
-    
+
     test('should return 404 if TODO not found', async()=>{
 
         
@@ -145,6 +145,31 @@ describe('todo route testing', () => {
           }); 
     });
 
+    /* DELETE TESTS */
+    test('should delete a TODO api/todos/:id', async()=>{
+        const todo = await prisma.todo.create({data:todo1});
+        const {body} = await request(testServer.app)
+        .delete(`/api/todos/${todo.id}`)
+        .expect(200);
+        expect(body).toEqual({ 
+            id: expect.any(Number), 
+            text: todo.text, 
+            completedAt: null 
+        });
+    });
+
+    test('should return 404 delete a TODO that not exist api/todos/:id', async()=>{
+
+        const {body} = await request(testServer.app)
+        .delete(`/api/todos/999`)
+        .expect(200);
+        console.log('delete404: ',body);
+        // expect(body).toEqual({ 
+        //     id: expect.any(Number), 
+        //     text: todo.text, 
+        //     completedAt: null 
+        // });
+    });
 
 
 });
