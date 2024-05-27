@@ -162,7 +162,7 @@ describe('todo route testing', () => {
 
         const {body} = await request(testServer.app)
         .delete(`/api/todos/999`)
-        .expect(200);
+        .expect(400);
         console.log('delete404: ',body);
         // expect(body).toEqual({ 
         //     id: expect.any(Number), 
